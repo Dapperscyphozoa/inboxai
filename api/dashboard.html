@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InboxAI Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f7fa;
+            color: #1a1a1a;
+        }
+        .container { max-width: 1000px; margin: 40px auto; padding: 20px; }
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .btn {
+            background: #0066ff;
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover { background: #0052cc; }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .email-item {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+        .email-item:hover { background: #f8f9fa; }
+        .email-from { font-weight: 600; font-size: 16px; }
+        .email-subject { font-size: 15px; margin: 8px 0; color: #333; }
+        .email-preview { color: #666; font-size: 14px; }
+        .response {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border: 2px solid #e5e5e5;
+            cursor: pointer;
+        }
+        .response:hover, .response.selected {
+            border-color: #0066ff;
+            background: #f0f7ff;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>InboxAI Dashboard</h1>
+            <p id="userStatus">Connect your Gmail to get started</p>
+        </div>
+
+        <div id="connectSection" class="card">
+            <h2>Connect Gmail</h2>
+            <p style="margin: 15px 0; color: #666;">Connect your Gmail account to start receiving AI-powered email responses</p>
+            <button class="btn" onclick="connectGmail()">Connect Gmail Account</button>
+        </div>
+
+        <div id="emailSection" style="display: none;">
+            <div class="card">
+                <h2>Your Emails</h2>
+                <button class="btn" onclick="loadEmails()" style="float: right;">Refresh</button>
+                <div style="clear: both; padding-top: 20px;" id="emailList"></div>
+            </div>
+        </div>
+
+        <div id="loadingSection" class="loading" style="display: none;">
+            <div style="border: 4px solid #f3f3f3; border-top: 4px solid #0066ff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <div id="responseModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalSubject"></h2>
+            <p id="modalFrom" style="color: #666; margin: 10px 0;"></p>
+            <hr style="margin: 20px 0;">
+            <div id="modalBody" style="margin: 20px 0; white-space: pre-wrap;"></div>
+            <h3>AI Responses:</h3>
+            <div id="modalResponses"></div>
+            <div style="margin-top: 30px; text-align: right;">
+                <button class="btn" style="background: #ccc;" onclick="closeModal()">Close</button>
+                <button class="btn" onclick="sendEmail()">Send Response</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
+    <script>
+        const CLIENT_ID = '916330711384-a6uuvana6u051hvja5lk4h95gudspb4d.apps.googleusercontent.com';
+        const REDIRECT_URI = window.location.origin + '/dashboard.html';
+        const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send';
+
+        let accessToken = localStorage.getItem('gmail_access_token');
+        let currentEmails = [];
+        let selectedEmail = null;
+        let selectedResponse = null;
+
+        // Check for OAuth callback
+        window.onload = function() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            
+            if (params.get('access_token')) {
+                accessToken = params.get('access_token');
+                localStorage.setItem('gmail_access_token', accessToken);
+                window.location.hash = '';
+                document.getElementById('connectSection').style.display = 'none';
+                document.getElementById('emailSection').style.display = 'block';
+                loadEmails();
+            } else if (accessToken) {
+                document.getElementById('connectSection').style.display = 'none';
+                document.getElementById('emailSection').style.display = 'block';
+                loadEmails();
+            }
+        };
+
+        function connectGmail() {
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+                `client_id=${CLIENT_ID}&` +
+                `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+                `response_type=token&` +
+                `scope=${encodeURIComponent(SCOPES)}`;
+            
+            window.location.href = authUrl;
+        }
+
+        async function loadEmails() {
+            if (!accessToken) {
+                connectGmail();
+                return;
+            }
+
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('emailList').innerHTML = '';
+
+            try {
+                const response = await fetch('/api/fetch-emails', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accessToken })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    if (data.error.includes('invalid') || data.error.includes('expired')) {
+                        localStorage.removeItem('gmail_access_token');
+                        connectGmail();
+                        return;
+                    }
+                    throw new Error(data.error);
+                }
+
+                currentEmails = data.emails || [];
+                document.getElementById('loadingSection').style.display = 'none';
+                displayEmails();
+            } catch (error) {
+                document.getElementById('loadingSection').style.display = 'none';
+                alert('Error loading emails: ' + error.message);
+            }
+        }
+
+        function displayEmails() {
+            const container = document.getElementById('emailList');
+            
+            if (currentEmails.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No unread emails</p>';
+                return;
+            }
+
+            currentEmails.forEach(email => {
+                const div = document.createElement('div');
+                div.className = 'email-item';
+                div.onclick = () => openEmail(email);
+                div.innerHTML = `
+                    <div class="email-from">${email.from}</div>
+                    <div class="email-subject">${email.subject}</div>
+                    <div class="email-preview">${email.body.substring(0, 150)}...</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function openEmail(email) {
+            selectedEmail = email;
+            document.getElementById('modalSubject').textContent = email.subject;
+            document.getElementById('modalFrom').textContent = 'From: ' + email.from;
+            document.getElementById('modalBody').textContent = email.body;
+
+            const responsesDiv = document.getElementById('modalResponses');
+            responsesDiv.innerHTML = '';
+
+            if (!email.aiResponses || email.aiResponses.length === 0) {
+                responsesDiv.innerHTML = '<p>No AI responses available</p>';
+            } else {
+                email.aiResponses.forEach((resp, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'response' + (i === 0 ? ' selected' : '');
+                    div.onclick = () => selectResponse(div, resp);
+                    div.innerHTML = `
+                        <strong style="color: #0066ff;">${resp.label}</strong>
+                        <div style="margin-top: 10px; white-space: pre-wrap;">${resp.text}</div>
+                    `;
+                    responsesDiv.appendChild(div);
+                });
+                selectedResponse = email.aiResponses[0];
+            }
+
+            document.getElementById('responseModal').classList.add('active');
+        }
+
+        function selectResponse(element, response) {
+            document.querySelectorAll('.response').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedResponse = response;
+        }
+
+        async function sendEmail() {
+            if (!selectedEmail || !selectedResponse) {
+                alert('Please select a response');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        accessToken,
+                        to: selectedEmail.from,
+                        subject: selectedEmail.subject,
+                        body: selectedResponse.text,
+                        threadId: selectedEmail.threadId
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Email sent successfully!');
+                    closeModal();
+                    loadEmails();
+                } else {
+                    throw new Error(data.error || 'Failed to send');
+                }
+            } catch (error) {
+                alert('Error sending email: ' + error.message);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('responseModal').classList.remove('active');
+        }
+    </script>
+</body>
+</html>
