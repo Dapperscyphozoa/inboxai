@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InboxAI - Overlay</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+        
+        .floating-window {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            max-height: 600px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .floating-window.minimized {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            max-height: none;
+        }
+        
+        .floating-window.minimized .window-content,
+        .floating-window.minimized .window-header h3 {
+            display: none;
+        }
+        
+        .window-header {
+            background: linear-gradient(135deg, #0066ff 0%, #0052cc 100%);
+            color: white;
+            padding: 15px 20px;
+            cursor: move;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .control-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-btn:hover { background: rgba(255,255,255,0.3); }
+        
+        .window-content {
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .email-mini {
+            background: #f8f9fa;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+        
+        .email-mini:hover { background: #e9ecef; }
+        .email-mini.priority { border-left-color: #ff4444; background: #fff5f5; }
+        
+        .email-from { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+        .email-subject { font-size: 13px; color: #666; }
+        
+        .btn {
+            background: #0066ff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn:hover { background: #0052cc; }
+        
+        .priority-badge {
+            background: #ff4444;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+        
+        .dragging {
+            opacity: 0.8;
+            cursor: move !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-window" id="floatingWindow">
+        <div class="window-header" id="windowHeader">
+            <h3>InboxAI</h3>
+            <div class="window-controls">
+                <button class="control-btn" onclick="toggleMinimize()" title="Minimize">−</button>
+                <button class="control-btn" onclick="openFullDashboard()" title="Open Full Dashboard">⤢</button>
+            </div>
+        </div>
+        <div class="window-content" id="windowContent">
+            <div id="emailList">
+                <p style="color: #999; text-align: center; padding: 20px;">Loading emails...</p>
+            </div>
+            <button class="btn" onclick="refreshEmails()">Refresh Emails</button>
+        </div>
+    </div>
+
+    <script>
+        let accessToken = localStorage.getItem('gmail_access_token');
+        let currentEmails = [];
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+        let isMinimized = false;
+
+        const floatingWindow = document.getElementById('floatingWindow');
+        const header = document.getElementById('windowHeader');
+
+        // Dragging functionality
+        header.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+
+        function dragStart(e) {
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+
+            if (e.target === header || e.target.parentElement === header) {
+                isDragging = true;
+                floatingWindow.classList.add('dragging');
+            }
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+                xOffset = currentX;
+                yOffset = currentY;
+
+                setTranslate(currentX, currentY, floatingWindow);
+            }
+        }
+
+        function dragEnd(e) {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+            floatingWindow.classList.remove('dragging');
+        }
+
+        function setTranslate(xPos, yPos, el) {
+            el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+        }
+
+        function toggleMinimize() {
+            isMinimized = !isMinimized;
+            floatingWindow.classList.toggle('minimized');
+        }
+
+        function openFullDashboard() {
+            window.open('/dashboard.html', '_blank');
+        }
+
+        async function refreshEmails() {
+            if (!accessToken) {
+                document.getElementById('emailList').innerHTML = 
+                    '<p style="color: #999; text-align: center; padding: 20px;">Please log in via dashboard</p>';
+                return;
+            }
+
+            document.getElementById('emailList').innerHTML = 
+                '<p style="color: #999; text-align: center; padding: 20px;">Loading...</p>';
+
+            try {
+                const response = await fetch('/api/fetch-emails', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accessToken })
+                });
+
+                const data = await response.json();
+                currentEmails = data.emails || [];
+                displayEmails();
+
+                // Alert for priority
+                const priorityCount = currentEmails.filter(e => e.priority).length;
+                if (priorityCount > 0 && Notification.permission === 'granted') {
+                    new Notification(`InboxAI: ${priorityCount} urgent email${priorityCount > 1 ? 's' : ''}!`);
+                }
+            } catch (error) {
+                document.getElementById('emailList').innerHTML = 
+                    '<p style="color: #ff4444; text-align: center; padding: 20px;">Error loading emails</p>';
+            }
+        }
+
+        function displayEmails() {
+            const container = document.getElementById('emailList');
+            
+            if (currentEmails.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No new emails</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            const sorted = [...currentEmails].sort((a, b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0));
+
+            sorted.slice(0, 5).forEach(email => {
+                const div = document.createElement('div');
+                div.className = 'email-mini' + (email.priority ? ' priority' : '');
+                div.onclick = () => openEmail(email);
+                div.innerHTML = `
+                    <div class="email-from">
+                        ${email.from.split('<')[0].trim()}
+                        ${email.priority ? '<span class="priority-badge">URGENT</span>' : ''}
+                    </div>
+                    <div class="email-subject">${email.subject}</div>
+                `;
+                container.appendChild(div);
+            });
+
+            if (currentEmails.length > 5) {
+                const more = document.createElement('p');
+                more.style.cssText = 'text-align: center; color: #0066ff; margin-top: 10px; cursor: pointer;';
+                more.textContent = `+${currentEmails.length - 5} more emails`;
+                more.onclick = openFullDashboard;
+                container.appendChild(more);
+            }
+        }
+
+        function openEmail(email) {
+            localStorage.setItem('selected_email', JSON.stringify(email));
+            window.open('/dashboard.html', '_blank');
+        }
+
+        // Request notification permission
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Auto-refresh every 2 minutes
+        setInterval(refreshEmails, 120000);
+
+        // Initial load
+        refreshEmails();
+    </script>
+</body>
+</html>
