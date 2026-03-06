@@ -68,13 +68,18 @@ export default async function handler(req, res) {
     const messages = response.data.messages || []
     const emailsWithResponses = []
     
-    // Process each email
-    for (const message of messages) {
-      const email = await gmail.users.messages.get({
-        userId: 'me',
-        id: message.id,
-        format: 'full'
-      })
+    // Process emails in parallel for speed (limit to 5 at a time to avoid rate limits)
+    const batchSize = 5;
+    for (let i = 0; i < messages.length; i += batchSize) {
+      const batch = messages.slice(i, i + batchSize);
+      
+      const batchPromises = batch.map(async (message) => {
+        try {
+          const email = await gmail.users.messages.get({
+            userId: 'me',
+            id: message.id,
+            format: 'full'
+          })
       
       const headers = email.data.payload.headers
       const subject = headers.find(h => h.name === 'Subject')?.value || ''
@@ -205,16 +210,25 @@ Make each response different in tone and length.`
         }));
       }
       
-      emailsWithResponses.push({
-        id: message.id,
-        threadId: email.data.threadId,
-        from,
-        subject,
-        body: body.substring(0, 500),
-        aiResponses: aiResponses.responses || [],
-        priority: isPriority
-      })
-    }
+        emailsWithResponses.push({
+          id: message.id,
+          threadId: email.data.threadId,
+          from,
+          subject,
+          body: body.substring(0, 500),
+          aiResponses: aiResponses.responses || [],
+          priority: isPriority
+        })
+        
+        return true;
+      } catch (error) {
+        console.error('Error processing email:', message.id, error);
+        return null;
+      }
+    });
+    
+    await Promise.all(batchPromises);
+  }
     
     return res.status(200).json({ 
       emails: emailsWithResponses,
