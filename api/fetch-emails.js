@@ -79,6 +79,8 @@ export default async function handler(req, res) {
       const headers = email.data.payload.headers
       const subject = headers.find(h => h.name === 'Subject')?.value || ''
       const from = headers.find(h => h.name === 'From')?.value || ''
+      const senderName = from.split('<')[0].trim() || 'Sender'
+      const senderEmail = from.match(/<(.+)>/)?.[1] || from
       
       // Get email body
       let body = ''
