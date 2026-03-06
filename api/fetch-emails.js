@@ -117,43 +117,9 @@ export default async function handler(req, res) {
       const responseCount = (customInstructions && customInstructions.responseCount) ? parseInt(customInstructions.responseCount) : 6;
       const customStyles = (customInstructions && customInstructions.customStyles) ? customInstructions.customStyles.split('\n').filter(s => s.trim()) : [];
       
-      // Build response options
-      let responseInstructions = '';
-      if (customStyles.length > 0) {
-        // Use custom styles
-        for (let i = 0; i < Math.min(responseCount, customStyles.length); i++) {
-          responseInstructions += `${i + 1}. ${customStyles[i]}\n`;
-        }
-        // Fill remaining with defaults if needed
-        if (customStyles.length < responseCount) {
-          const defaults = ['Professional', 'Concise', 'Detailed', 'Friendly', 'Direct', 'Casual'];
-          for (let i = customStyles.length; i < responseCount; i++) {
-            responseInstructions += `${i + 1}. ${defaults[i % defaults.length]}\n`;
-          }
-        }
-      } else {
-        // Use default styles
-        const defaults = [
-          `${tones[selectedTone]} - natural and conversational`,
-          'Ultra concise - 2-3 sentences max',
-          'Detailed - comprehensive but still natural',
-          'Friendly but efficient - warm without fluff',
-          'Direct and businesslike - professional without being stiff',
-          'Casual - like talking to a friend',
-          'Consultative - ask clarifying questions',
-          'Enthusiastic - high energy and positive',
-          'Minimalist - absolute bare minimum words'
-        ];
-        for (let i = 0; i < Math.min(responseCount, defaults.length); i++) {
-          responseInstructions += `${i + 1}. ${defaults[i]}\n`;
-        }
-      }
-
-      // Build JSON template for responses
-      const jsonTemplate = Array.from({length: responseCount}, (_, i) => {
-        const label = customStyles[i] || ['Professional', 'Quick Reply', 'Detailed', 'Friendly', 'Business', 'Casual', 'Consultative', 'Energetic', 'Minimal'][i];
-        return `{"label": "${label}", "text": "response"}`;
-      }).join(',\n    ');
+      // Build response instructions (simpler approach)
+      const defaultStyles = ['Professional', 'Concise', 'Detailed', 'Friendly', 'Direct', 'Casual', 'Consultative', 'Enthusiastic', 'Minimal'];
+      const stylesToUse = customStyles.length > 0 ? customStyles : defaultStyles;
       
       // Generate AI responses with user's style and custom instructions
       const aiResponse = await anthropic.messages.create({
@@ -163,7 +129,7 @@ export default async function handler(req, res) {
           role: 'user',
           content: `You are ghostwriting an email response. Write like a real human, not an AI.
 
-From: ${senderName} <${senderEmail}>
+From: ${from}
 Subject: ${subject}
 ${isPriority ? 'PRIORITY: This email is URGENT - acknowledge urgency in response' : ''}
 
@@ -172,26 +138,20 @@ ${body.substring(0, 1000)}
 
 ${userWritingStyle}
 
-${customInstructions ? `CUSTOM INSTRUCTIONS (ALWAYS FOLLOW THESE):\n${customInstructions.openInstructions || customInstructions.custom || customInstructions}\n` : ''}
+${customInstructions ? `CUSTOM INSTRUCTIONS (ALWAYS FOLLOW THESE):\n${customInstructions.openInstructions || customInstructions.custom || ''}\n` : ''}
 
 CRITICAL RULES:
 - NO pleasantries like "Thank you for reaching out" or "I hope this email finds you well"  
-- NO corporate jargon or overly formal language unless the user writes that way
-- NO acknowledgments like "I appreciate your email"
+- NO corporate jargon
 - Be direct and natural
-- Match the sender's energy level
-- Write like you're texting a colleague, not writing a press release
 - DO NOT include signature - it will be added automatically
 
-Generate ${responseCount} response options with these tones:
-${responseInstructions}
+Generate ${responseCount} different response options.
 
-Return ONLY valid JSON:
-{
-  "responses": [
-    ${jsonTemplate}
-  ]
-}`
+Return ONLY valid JSON with NO markdown, NO code blocks, NO extra text:
+{"responses": [{"label": "Style1", "text": "response1"}, {"label": "Style2", "text": "response2"}]}
+
+Make each response different in tone and length.`
         }]
       })
       
