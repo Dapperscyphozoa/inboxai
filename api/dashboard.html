@@ -141,7 +141,7 @@
 
     <script>
         const CLIENT_ID = '916330711384-a6uuvana6u051hvja5lk4h95gudspb4d.apps.googleusercontent.com';
-        const REDIRECT_URI = window.location.origin + '/dashboard.html';
+        const REDIRECT_URI = 'https://inbox-ai-beige.vercel.app/dashboard.html';
         const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send';
 
         let accessToken = localStorage.getItem('gmail_access_token');
@@ -150,17 +150,41 @@
         let selectedResponse = null;
 
         // Check for OAuth callback
-        window.onload = function() {
-            const hash = window.location.hash.substring(1);
-            const params = new URLSearchParams(hash);
+        window.onload = async function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
             
-            if (params.get('access_token')) {
-                accessToken = params.get('access_token');
-                localStorage.setItem('gmail_access_token', accessToken);
-                window.location.hash = '';
-                document.getElementById('connectSection').style.display = 'none';
-                document.getElementById('emailSection').style.display = 'block';
-                loadEmails();
+            if (code) {
+                // Exchange code for token
+                document.getElementById('loadingSection').style.display = 'block';
+                
+                try {
+                    const response = await fetch('/api/oauth/google', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.access_token) {
+                        accessToken = data.access_token;
+                        localStorage.setItem('gmail_access_token', accessToken);
+                        
+                        // Clean URL
+                        window.history.replaceState({}, document.title, '/dashboard.html');
+                        
+                        document.getElementById('loadingSection').style.display = 'none';
+                        document.getElementById('connectSection').style.display = 'none';
+                        document.getElementById('emailSection').style.display = 'block';
+                        loadEmails();
+                    } else {
+                        throw new Error(data.error || 'Failed to get access token');
+                    }
+                } catch (error) {
+                    document.getElementById('loadingSection').style.display = 'none';
+                    alert('OAuth failed: ' + error.message);
+                }
             } else if (accessToken) {
                 document.getElementById('connectSection').style.display = 'none';
                 document.getElementById('emailSection').style.display = 'block';
@@ -172,8 +196,10 @@
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
                 `client_id=${CLIENT_ID}&` +
                 `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
-                `response_type=token&` +
-                `scope=${encodeURIComponent(SCOPES)}`;
+                `response_type=code&` +
+                `scope=${encodeURIComponent(SCOPES)}&` +
+                `access_type=offline&` +
+                `prompt=consent`;
             
             window.location.href = authUrl;
         }
