@@ -112,11 +112,53 @@ export default async function handler(req, res) {
       }
       
       const selectedTone = tonePreference || 'professional'
+
+      // Get custom response settings
+      const responseCount = (customInstructions && customInstructions.responseCount) ? parseInt(customInstructions.responseCount) : 6;
+      const customStyles = (customInstructions && customInstructions.customStyles) ? customInstructions.customStyles.split('\n').filter(s => s.trim()) : [];
+      
+      // Build response options
+      let responseInstructions = '';
+      if (customStyles.length > 0) {
+        // Use custom styles
+        for (let i = 0; i < Math.min(responseCount, customStyles.length); i++) {
+          responseInstructions += `${i + 1}. ${customStyles[i]}\n`;
+        }
+        // Fill remaining with defaults if needed
+        if (customStyles.length < responseCount) {
+          const defaults = ['Professional', 'Concise', 'Detailed', 'Friendly', 'Direct', 'Casual'];
+          for (let i = customStyles.length; i < responseCount; i++) {
+            responseInstructions += `${i + 1}. ${defaults[i % defaults.length]}\n`;
+          }
+        }
+      } else {
+        // Use default styles
+        const defaults = [
+          `${tones[selectedTone]} - natural and conversational`,
+          'Ultra concise - 2-3 sentences max',
+          'Detailed - comprehensive but still natural',
+          'Friendly but efficient - warm without fluff',
+          'Direct and businesslike - professional without being stiff',
+          'Casual - like talking to a friend',
+          'Consultative - ask clarifying questions',
+          'Enthusiastic - high energy and positive',
+          'Minimalist - absolute bare minimum words'
+        ];
+        for (let i = 0; i < Math.min(responseCount, defaults.length); i++) {
+          responseInstructions += `${i + 1}. ${defaults[i]}\n`;
+        }
+      }
+
+      // Build JSON template for responses
+      const jsonTemplate = Array.from({length: responseCount}, (_, i) => {
+        const label = customStyles[i] || ['Professional', 'Quick Reply', 'Detailed', 'Friendly', 'Business', 'Casual', 'Consultative', 'Energetic', 'Minimal'][i];
+        return `{"label": "${label}", "text": "response"}`;
+      }).join(',\n    ');
       
       // Generate AI responses with user's style and custom instructions
       const aiResponse = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2500,
+        max_tokens: 3000,
         messages: [{
           role: 'user',
           content: `You are ghostwriting an email response. Write like a real human, not an AI.
@@ -130,10 +172,10 @@ ${body.substring(0, 1000)}
 
 ${userWritingStyle}
 
-${customInstructions ? `CUSTOM INSTRUCTIONS (ALWAYS FOLLOW THESE):\n${customInstructions}\n` : ''}
+${customInstructions ? `CUSTOM INSTRUCTIONS (ALWAYS FOLLOW THESE):\n${customInstructions.openInstructions || customInstructions.custom || customInstructions}\n` : ''}
 
 CRITICAL RULES:
-- NO pleasantries like "Thank you for reaching out" or "I hope this email finds you well"
+- NO pleasantries like "Thank you for reaching out" or "I hope this email finds you well"  
 - NO corporate jargon or overly formal language unless the user writes that way
 - NO acknowledgments like "I appreciate your email"
 - Be direct and natural
@@ -141,23 +183,13 @@ CRITICAL RULES:
 - Write like you're texting a colleague, not writing a press release
 - DO NOT include signature - it will be added automatically
 
-Generate 6 response options with these tones:
-1. ${tones[selectedTone]} - natural and conversational
-2. Ultra concise - 2-3 sentences max
-3. Detailed - comprehensive but still natural
-4. Friendly but efficient - warm without fluff
-5. Direct and businesslike - professional without being stiff
-6. Casual - like talking to a friend
+Generate ${responseCount} response options with these tones:
+${responseInstructions}
 
 Return ONLY valid JSON:
 {
   "responses": [
-    {"label": "${selectedTone.charAt(0).toUpperCase() + selectedTone.slice(1)}", "text": "response"},
-    {"label": "Quick Reply", "text": "response"},
-    {"label": "Detailed", "text": "response"},
-    {"label": "Friendly", "text": "response"},
-    {"label": "Business", "text": "response"},
-    {"label": "Casual", "text": "response"}
+    ${jsonTemplate}
   ]
 }`
         }]
