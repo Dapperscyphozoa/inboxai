@@ -153,12 +153,14 @@
         window.onload = async function() {
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
+            console.log('OAuth code received:', code);
             
             if (code) {
                 // Exchange code for token
                 document.getElementById('loadingSection').style.display = 'block';
                 
                 try {
+                    console.log('Exchanging code for token...');
                     const response = await fetch('/api/oauth/google', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
