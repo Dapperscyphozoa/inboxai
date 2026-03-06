@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration - InboxAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --navy: #0a1628;
+            --navy-light: #152238;
+            --navy-lighter: #1f2f47;
+            --gold: #d4af37;
+            --gold-dim: #b8962e;
+            --white: #ffffff;
+            --off-white: #f8f9fa;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666;
+            --shadow-premium: 0 20px 60px rgba(0,0,0,0.12);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-lighter) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 60px 40px; }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 50px 60px;
+            border-radius: 24px;
+            margin-bottom: 40px;
+            box-shadow: var(--shadow-premium);
+            border: 1px solid rgba(212,175,55,0.1);
+            position: relative;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold), var(--gold-dim), var(--gold));
+        }
+        
+        .back-link {
+            color: var(--gold);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+            display: inline-block;
+            margin-bottom: 16px;
+        }
+        
+        .back-link:hover { transform: translateX(-4px); }
+        
+        h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 48px;
+            font-weight: 300;
+            color: var(--navy);
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 50px 60px;
+            border-radius: 24px;
+            margin: 30px 0;
+            box-shadow: var(--shadow-premium);
+            border: 1px solid rgba(212,175,55,0.08);
+            transition: all 0.3s;
+        }
+        
+        .card:hover { box-shadow: 0 30px 80px rgba(0,0,0,0.15); }
+        
+        h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 32px;
+            font-weight: 400;
+            color: var(--gold);
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin: 24px 0 12px;
+            font-weight: 600;
+            color: var(--navy);
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+        
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid rgba(212,175,55,0.2);
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.8);
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 4px rgba(212,175,55,0.1);
+        }
+        
+        textarea {
+            min-height: 180px;
+            resize: vertical;
+            font-family: 'Inter', monospace;
+            line-height: 1.7;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dim) 100%);
+            color: var(--navy);
+            padding: 16px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+            box-shadow: 0 8px 24px rgba(212,175,55,0.25);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(212,175,55,0.35);
+        }
+        
+        .template-item {
+            background: linear-gradient(135deg, rgba(255,255,255,0.6), rgba(248,249,250,0.6));
+            padding: 20px 24px;
+            margin: 12px 0;
+            border-radius: 12px;
+            border: 1px solid rgba(212,175,55,0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .template-item:hover {
+            transform: translateX(4px);
+            border-color: var(--gold);
+        }
+        
+        .template-name {
+            font-weight: 600;
+            color: var(--navy);
+        }
+        
+        .delete-btn {
+            background: rgba(220,38,38,0.1);
+            color: #dc2626;
+            padding: 8px 20px;
+            border: 1px solid rgba(220,38,38,0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        
+        .delete-btn:hover {
+            background: rgba(220,38,38,0.2);
+        }
+        
+        .preview {
+            margin-top: 24px;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(212,175,55,0.05), rgba(212,175,55,0.02));
+            border-radius: 12px;
+            border-left: 3px solid var(--gold);
+        }
+        
+        .preview p {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/dashboard.html" class="back-link">← Return to Dashboard</a>
+            <h1>Configuration</h1>
+        </div>
+
+        <div class="card">
+            <h2>Response Preferences</h2>
+            <label>Number of AI Response Options</label>
+            <select id="responseCount" onchange="saveResponseCount()">
+                <option value="3">3 responses</option>
+                <option value="4">4 responses</option>
+                <option value="5">5 responses</option>
+                <option value="6" selected>6 responses</option>
+                <option value="7">7 responses</option>
+                <option value="8">8 responses</option>
+                <option value="9">9 responses</option>
+            </select>
+
+            <label>Custom Response Styles (one per line)</label>
+            <textarea id="customStyles" placeholder="Ultra professional&#10;Friendly neighbor&#10;Tech expert&#10;Consultative advisor"></textarea>
+            <button class="btn" onclick="saveCustomStyles()">Save Styles</button>
+            <div id="stylesPreview"></div>
+        </div>
+
+        <div class="card">
+            <h2>Calendar Integration</h2>
+            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <input type="checkbox" id="calendarEnabled" onchange="saveCalendarSetting()" style="width: auto; cursor: pointer;">
+                <span>Automatically create calendar events from meeting confirmations</span>
+            </label>
+            <div id="calendarStatus" class="preview" style="display: none;"></div>
+        </div>
+
+        <div class="card">
+            <h2>AI Instructions</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 24px;">Provide any instructions for how AI should handle your communications</p>
+            <textarea id="openInstructions" placeholder="Example instructions:&#10;&#10;- Always be direct and confident&#10;- Use British spelling&#10;- Mention our 30-day guarantee on product inquiries&#10;- Ask clarifying questions when unclear&#10;- Never apologize excessively"></textarea>
+            <button class="btn" onclick="saveOpenInstructions()">Save Instructions</button>
+            <div id="openInstructionsPreview"></div>
+        </div>
+
+        <div class="card">
+            <h2>Email Signature</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 24px;">Automatically appended to all responses</p>
+            <textarea id="signatureContent" placeholder="Best regards,&#10;John Smith&#10;CEO, Acme Corporation&#10;john@acme.com"></textarea>
+            <button class="btn" onclick="saveSignature()">Save Signature</button>
+            <div id="signaturePreview"></div>
+        </div>
+
+        <div class="card">
+            <h2>Pricing Templates</h2>
+            <input type="text" id="pricingName" placeholder="Template name (e.g., 'Q1 2026 Pricing')">
+            <textarea id="pricingContent" placeholder="Product A: $499&#10;Product B: $899&#10;Bulk discount: 15% for 10+ units"></textarea>
+            <button class="btn" onclick="savePricing()">Save Pricing</button>
+            <div id="pricingList" style="margin-top: 30px;"></div>
+        </div>
+
+        <div class="card">
+            <h2>Inventory Templates</h2>
+            <input type="text" id="stockName" placeholder="Template name">
+            <textarea id="stockContent" placeholder="Product A: 250 units&#10;Product B: Low stock (12 units)"></textarea>
+            <button class="btn" onclick="saveStock()">Save Inventory</button>
+            <div id="stockList" style="margin-top: 30px;"></div>
+        </div>
+
+        <div class="card">
+            <h2>Response Templates</h2>
+            <input type="text" id="templateName" placeholder="Template name">
+            <textarea id="templateContent" placeholder="Pre-written response..."></textarea>
+            <button class="btn" onclick="saveTemplate()">Save Template</button>
+            <div id="templateList" style="margin-top: 30px;"></div>
+        </div>
+    </div>
+
+    <script>
+        function loadAll() {
+            loadResponseSettings();
+            loadCalendarSetting();
+            loadOpenInstructions();
+            loadSignature();
+            loadPricing();
+            loadStock();
+            loadTemplates();
+        }
+
+        function saveResponseCount() {
+            localStorage.setItem('inboxai_response_count', document.getElementById('responseCount').value);
+        }
+
+        function saveCustomStyles() {
+            const styles = document.getElementById('customStyles').value.trim();
+            localStorage.setItem('inboxai_custom_styles', styles);
+            loadResponseSettings();
+        }
+
+        function loadResponseSettings() {
+            document.getElementById('responseCount').value = localStorage.getItem('inboxai_response_count') || '6';
+            const styles = localStorage.getItem('inboxai_custom_styles') || '';
+            document.getElementById('customStyles').value = styles;
+            
+            const preview = document.getElementById('stylesPreview');
+            if (styles) {
+                const list = styles.split('\n').filter(s => s.trim());
+                preview.innerHTML = '<div class="preview"><p>Active Styles (' + list.length + ')</p>' + list.map(s => '• ' + s).join('<br>') + '</div>';
+            } else {
+                preview.innerHTML = '';
+            }
+        }
+
+        function saveCalendarSetting() {
+            const enabled = document.getElementById('calendarEnabled').checked;
+            localStorage.setItem('inboxai_calendar_enabled', enabled);
+            loadCalendarSetting();
+        }
+
+        function loadCalendarSetting() {
+            const enabled = localStorage.getItem('inboxai_calendar_enabled') === 'true';
+            document.getElementById('calendarEnabled').checked = enabled;
+            document.getElementById('calendarStatus').style.display = enabled ? 'block' : 'none';
+            if (enabled) {
+                document.getElementById('calendarStatus').innerHTML = '<p>Status</p><div style="color: var(--gold); font-weight: 600;">Calendar integration active</div>';
+            }
+        }
+
+        function saveOpenInstructions() {
+            localStorage.setItem('inboxai_open_instructions', document.getElementById('openInstructions').value.trim());
+            loadOpenInstructions();
+        }
+
+        function loadOpenInstructions() {
+            const instructions = localStorage.getItem('inboxai_open_instructions') || '';
+            document.getElementById('openInstructions').value = instructions;
+            const preview = document.getElementById('openInstructionsPreview');
+            if (instructions) {
+                preview.innerHTML = '<div class="preview"><p>Current Instructions</p><div style="white-space: pre-wrap;">' + instructions + '</div></div>';
+            } else {
+                preview.innerHTML = '';
+            }
+        }
+
+        function saveSignature() {
+            localStorage.setItem('inboxai_signature', document.getElementById('signatureContent').value.trim());
+            loadSignature();
+        }
+
+        function loadSignature() {
+            const signature = localStorage.getItem('inboxai_signature') || '';
+            document.getElementById('signatureContent').value = signature;
+            const preview = document.getElementById('signaturePreview');
+            if (signature) {
+                preview.innerHTML = '<div class="preview"><p>Active Signature</p><div style="white-space: pre-wrap; font-family: monospace;">' + signature + '</div></div>';
+            } else {
+                preview.innerHTML = '';
+            }
+        }
+
+        function savePricing() {
+            const name = document.getElementById('pricingName').value.trim();
+            const content = document.getElementById('pricingContent').value.trim();
+            if (!name || !content) return;
+            const pricing = JSON.parse(localStorage.getItem('inboxai_pricing') || '[]');
+            pricing.push({ name, content, id: Date.now() });
+            localStorage.setItem('inboxai_pricing', JSON.stringify(pricing));
+            document.getElementById('pricingName').value = '';
+            document.getElementById('pricingContent').value = '';
+            loadPricing();
+        }
+
+        function loadPricing() {
+            const pricing = JSON.parse(localStorage.getItem('inboxai_pricing') || '[]');
+            const container = document.getElementById('pricingList');
+            container.innerHTML = pricing.map(item => `
+                <div class="template-item">
+                    <span class="template-name">${item.name}</span>
+                    <button class="delete-btn" onclick="deletePricing(${item.id})">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        function deletePricing(id) {
+            const pricing = JSON.parse(localStorage.getItem('inboxai_pricing') || '[]');
+            localStorage.setItem('inboxai_pricing', JSON.stringify(pricing.filter(item => item.id !== id)));
+            loadPricing();
+        }
+
+        function saveStock() {
+            const name = document.getElementById('stockName').value.trim();
+            const content = document.getElementById('stockContent').value.trim();
+            if (!name || !content) return;
+            const stock = JSON.parse(localStorage.getItem('inboxai_stock') || '[]');
+            stock.push({ name, content, id: Date.now() });
+            localStorage.setItem('inboxai_stock', JSON.stringify(stock));
+            document.getElementById('stockName').value = '';
+            document.getElementById('stockContent').value = '';
+            loadStock();
+        }
+
+        function loadStock() {
+            const stock = JSON.parse(localStorage.getItem('inboxai_stock') || '[]');
+            document.getElementById('stockList').innerHTML = stock.map(item => `
+                <div class="template-item">
+                    <span class="template-name">${item.name}</span>
+                    <button class="delete-btn" onclick="deleteStock(${item.id})">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteStock(id) {
+            const stock = JSON.parse(localStorage.getItem('inboxai_stock') || '[]');
+            localStorage.setItem('inboxai_stock', JSON.stringify(stock.filter(item => item.id !== id)));
+            loadStock();
+        }
+
+        function saveTemplate() {
+            const name = document.getElementById('templateName').value.trim();
+            const content = document.getElementById('templateContent').value.trim();
+            if (!name || !content) return;
+            const templates = JSON.parse(localStorage.getItem('inboxai_templates') || '[]');
+            templates.push({ name, content, id: Date.now() });
+            localStorage.setItem('inboxai_templates', JSON.stringify(templates));
+            document.getElementById('templateName').value = '';
+            document.getElementById('templateContent').value = '';
+            loadTemplates();
+        }
+
+        function loadTemplates() {
+            const templates = JSON.parse(localStorage.getItem('inboxai_templates') || '[]');
+            document.getElementById('templateList').innerHTML = templates.map(item => `
+                <div class="template-item">
+                    <span class="template-name">${item.name}</span>
+                    <button class="delete-btn" onclick="deleteTemplate(${item.id})">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteTemplate(id) {
+            const templates = JSON.parse(localStorage.getItem('inboxai_templates') || '[]');
+            localStorage.setItem('inboxai_templates', JSON.stringify(templates.filter(item => item.id !== id)));
+            loadTemplates();
+        }
+
+        loadAll();
+    </script>
+</body>
+</html>
