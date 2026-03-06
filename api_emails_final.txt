@@ -199,10 +199,40 @@ Return ONLY valid JSON:
       let aiResponses
       
       try {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/)
-        aiResponses = JSON.parse(jsonMatch ? jsonMatch[0] : responseText)
-      } catch {
-        aiResponses = { responses: [] }
+        // Remove markdown code blocks if present
+        let cleanText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        
+        // Try to find JSON object
+        const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          aiResponses = JSON.parse(jsonMatch[0]);
+        } else {
+          aiResponses = JSON.parse(cleanText);
+        }
+        
+        // Validate structure
+        if (!aiResponses.responses || !Array.isArray(aiResponses.responses)) {
+          throw new Error('Invalid response structure');
+        }
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Raw text:', responseText);
+        // Create fallback responses
+        aiResponses = {
+          responses: [
+            {
+              label: "Professional",
+              text: "I'll get back to you shortly with a detailed response."
+            },
+            {
+              label: "Quick Reply",
+              text: "Thanks for reaching out. Let me review this and respond soon."
+            },
+            {
+              label: "Detailed",
+              text: "Thank you for your message. I've received your inquiry and will provide a comprehensive response within 24 hours."
+            }
+          ]
+        };
       }
 
       // Add signature to all responses
