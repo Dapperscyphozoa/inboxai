@@ -244,7 +244,7 @@
         // Initialize Google Sign-In
         function initializeGoogleSignIn() {
             google.accounts.id.initialize({
-                client_id: '${GOOGLE_CLIENT_ID}',
+                client_id: '916330711384-jn2f3mmesljaqm3jtmcskjb3a82q99e9.apps.googleusercontent.com',
                 callback: handleGoogleSignIn
             });
             
@@ -262,7 +262,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         code: response.credential,
-                        client_id: '${GOOGLE_CLIENT_ID}',
+                        client_id: '916330711384-jn2f3mmesljaqm3jtmcskjb3a82q99e9.apps.googleusercontent.com',
                         grant_type: 'authorization_code'
                     })
                 });
