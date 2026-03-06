@@ -1,34 +1,14 @@
 {
   "name": "inboxai",
   "version": "1.0.0",
-  "description": "AI Email Assistant for Small Business",
-  "main": "index.html",
-  "scripts": {
-    "dev": "vercel dev",
-    "build": "echo 'No build step needed for static files'",
-    "deploy": "vercel --prod"
-  },
+  "description": "AI Email Assistant",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.1",
+    "@supabase/supabase-js": "^2.39.0",
+    "googleapis": "^128.0.0",
     "stripe": "^17.4.0"
-  },
-  "devDependencies": {
-    "vercel": "^37.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/inboxai"
-  },
-  "keywords": [
-    "ai",
-    "email",
-    "automation",
-    "saas",
-    "small-business"
-  ],
-  "author": "Your Name",
-  "license": "MIT"
+  }
 }
