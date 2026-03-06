@@ -1,14 +1,9 @@
 {
   "name": "inboxai",
   "version": "1.0.0",
-  "description": "AI Email Assistant",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.1",
-    "@supabase/supabase-js": "^2.39.0",
     "googleapis": "^128.0.0",
     "stripe": "^17.4.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   }
 }
